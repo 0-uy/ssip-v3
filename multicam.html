@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SSIP — Multi-Cámara PRO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- ONNX Runtime Web — necesario para YOLOv8n-pose -->
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #06090d;
+      --surf:    #0c1118;
+      --card:    #0f1620;
+      --border:  #1e2d3d;
+      --accent:  #00c8ff;
+      --green:   #00e676;
+      --warn:    #ffaa00;
+      --danger:  #ff3a3a;
+      --text:    #d4e4f0;
+      --sub:     #8aacbe;
+      --muted:   #3a5468;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Exo 2', sans-serif; overflow: hidden; }
+    body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:9999; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.02) 2px,rgba(0,0,0,0.02) 4px); }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    .hdr {
+      height: 50px; flex-shrink: 0;
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 14px; gap: 10px;
+      position: relative; z-index: 200;
+    }
+    .hdr::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,170,0,.45),transparent); }
+    .hdr-logo { font-family:'Share Tech Mono',monospace; font-size:15px; letter-spacing:4px; color:var(--accent); text-shadow:0 0 10px rgba(0,200,255,.3); }
+    .hdr-badge { padding:2px 8px; background:rgba(255,170,0,.1); border:1px solid var(--warn); border-radius:4px; font-size:9px; letter-spacing:2px; color:var(--warn); font-family:'Share Tech Mono',monospace; }
+    .hdr-emp { font-size:11px; color:var(--sub); font-family:'Share Tech Mono',monospace; }
+    .hdr-r { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .hdr-time { font-family:'Share Tech Mono',monospace; font-size:17px; color:var(--text); letter-spacing:2px; }
+    .hdr-alerts { display:flex; align-items:center; gap:5px; padding:3px 10px; border-radius:4px; background:var(--card); border:1px solid var(--border); font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--sub); transition:all .3s; }
+    .hdr-alerts.on { border-color:var(--danger); background:rgba(255,58,58,.08); color:var(--danger); }
+    .hdr-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); transition:all .3s; }
+    .hdr-alerts.on .hdr-dot { background:var(--danger); box-shadow:0 0 6px var(--danger); animation:blink .6s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+    .hdr-btn { padding:4px 11px; background:transparent; border:1px solid var(--border); border-radius:5px; color:var(--sub); font-size:11px; text-decoration:none; transition:all .2s; cursor:pointer; font-family:'Exo 2',sans-serif; }
+    .hdr-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    /* ── APP BODY ────────────────────────────────────────── */
+    .app { display:flex; height:calc(100vh - 50px); overflow:hidden; }
+
+    /* ── CAMS GRID ───────────────────────────────────────── */
+    .grid {
+      flex:1; min-width:0;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: 1fr;
+      gap:5px; padding:6px;
+      overflow:hidden;
+      align-items:stretch;
+    }
+
+    /* ── SINGLE CELL ─────────────────────────────────────── */
+    .cell {
+      display:flex; flex-direction:column;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      min-height:0; min-width:0;
+      position:relative;
+      overflow:visible;
+      transition:border-color .3s, box-shadow .3s;
+    }
+    .cell.alerting { border-color:var(--danger); box-shadow:0 0 18px rgba(255,58,58,.25); }
+
+    /* cell header */
+    .cell-hdr {
+      display:flex; align-items:center; gap:6px;
+      padding:5px 8px; flex-shrink:0;
+      background:rgba(0,0,0,.3);
+      border-bottom:1px solid var(--border);
+      border-radius:7px 7px 0 0;
+    }
+    .cell-num { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--sub); flex-shrink:0; }
+    .cell-name { font-size:11px; color:var(--text); flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .cell-badge { font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px; padding:2px 6px; border-radius:3px; flex-shrink:0; }
+    .cell-badge.off  { color:var(--sub); border:1px solid rgba(138,172,190,.2); }
+    .cell-badge.live { color:var(--green); border:1px solid rgba(0,230,118,.3); background:rgba(0,230,118,.06); }
+    .cell-badge.alert { color:var(--danger); border:1px solid rgba(255,58,58,.4); background:rgba(255,58,58,.08); animation:blink .6s infinite; }
+
+    /* video wrap — fills all available space */
+    .cell-wrap {
+      position:relative;
+      flex:1; min-height:0; min-width:0;
+      background:#000;
+      overflow:hidden;
+      /* Nunca menos de 120px de alto para que el video sea visible */
+      min-height:120px;
+    }
+    .cell-wrap::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; }
+
+    .cell-video {
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:contain;
+      background:#000;
+      display:block;
+    }
+    .cell-canvas {
+      position:absolute; inset:0;
+      width:100%; height:100%;
+    }
+
+    /* no signal */
+    .cell-nosig {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:10px; color:var(--sub); font-size:11px; letter-spacing:.5px;
+      background:var(--card); z-index:2;
+    }
+    .cell-nosig svg { width:38px; height:38px; opacity:.2; }
+    .cell-nosig span { color:var(--sub); }
+    .cell-nosig small { font-size:10px; color:var(--muted); margin-top:-4px; }
+
+    /* alert overlay */
+    .cell-alert { position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:20; pointer-events:none; }
+    .cell-alert.on { display:flex; }
+    .cell-alert-border { position:absolute; inset:0; border:2px solid var(--danger); animation:bPulse .5s infinite; }
+    .cell-alert-txt { background:rgba(255,58,58,.92); color:#fff; font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px; padding:5px 12px; border-radius:4px; font-weight:bold; }
+    @keyframes bPulse { 0%,100%{box-shadow:inset 0 0 12px rgba(255,58,58,.15),0 0 12px rgba(255,58,58,.2)} 50%{box-shadow:inset 0 0 28px rgba(255,58,58,.4),0 0 28px rgba(255,58,58,.4)} }
+
+    /* ── CELL FOOTER (compact, always visible) ───────────── */
+    .cell-foot {
+      display:flex; align-items:center; gap:5px;
+      padding:5px 7px; flex-shrink:0;
+      background:rgba(0,0,0,.3);
+      border-top:1px solid var(--border);
+      border-radius:0 0 7px 7px;
+    }
+    .fb { /* footer button */
+      display:flex; align-items:center; gap:3px;
+      padding:3px 9px; border-radius:4px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--sub); font-size:10px; font-family:'Exo 2',sans-serif;
+      cursor:pointer; transition:all .18s; white-space:nowrap;
+    }
+    .fb:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); background:rgba(0,200,255,.05); }
+    .fb:disabled { opacity:.22; cursor:not-allowed; }
+    .fb.on { border-color:var(--danger); color:var(--danger); background:rgba(255,58,58,.07); }
+    .fb.on:hover:not(:disabled) { border-color:var(--green); color:var(--green); background:rgba(0,230,118,.06); }
+    .cell-fps { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--muted); margin-left:auto; }
+    .fb-cfg { /* gear icon button */
+      width:24px; height:24px; border-radius:4px;
+      border:1px solid var(--border); background:transparent;
+      color:var(--sub); font-size:12px;
+      cursor:pointer; transition:all .18s;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .fb-cfg:hover, .fb-cfg.open { border-color:var(--accent); color:var(--accent); background:rgba(0,200,255,.06); }
+
+    /* ── CONFIG PANEL (slides up over video) ─────────────── */
+    .cell-panel {
+      position:absolute;
+      bottom:36px; left:0; right:0;   /* sits just above footer */
+      background:rgba(8,14,20,.97);
+      border:1px solid rgba(0,200,255,.3);
+      border-bottom:none;
+      border-radius:8px 8px 0 0;
+      z-index:50;
+      overflow:hidden;
+      max-height:0;
+      opacity:0;
+      transition:max-height .26s cubic-bezier(.4,0,.2,1), opacity .18s;
+    }
+    .cell-panel.open { max-height:260px; opacity:1; }
+
+    .panel-inner { padding:10px 10px 7px; display:flex; flex-direction:column; gap:7px; }
+
+    .p-row { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .p-lbl { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--sub); width:40px; flex-shrink:0; }
+
+    .p-tab {
+      padding:3px 8px; border-radius:4px;
+      background:transparent; border:1px solid var(--border);
+      color:var(--sub); font-size:10px; font-family:'Exo 2',sans-serif;
+      cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .p-tab:hover, .p-tab.on { border-color:var(--accent); color:var(--accent); background:rgba(0,200,255,.07); }
+
+    .p-sel {
+      flex:1; min-width:0; padding:4px 7px;
+      background:rgba(0,0,0,.5); border:1px solid var(--border);
+      border-radius:4px; color:var(--text);
+      font-family:'Share Tech Mono',monospace; font-size:10px;
+      outline:none; cursor:pointer; transition:border-color .18s;
+    }
+    .p-sel:hover, .p-sel:focus { border-color:var(--accent); }
+    .p-sel option { background:#0c1118; color:var(--text); }
+
+    .p-url {
+      flex:1; padding:4px 7px;
+      background:rgba(0,0,0,.5); border:1px solid var(--border);
+      border-radius:4px; color:var(--text);
+      font-family:'Share Tech Mono',monospace; font-size:10px;
+      outline:none; transition:border-color .18s;
+    }
+    .p-url:focus { border-color:var(--accent); }
+    .p-url::placeholder { color:var(--muted); }
+    .p-btn {
+      padding:4px 9px; border-radius:4px;
+      background:rgba(0,200,255,.08); border:1px solid var(--accent);
+      color:var(--accent); font-size:10px; cursor:pointer;
+      font-family:'Exo 2',sans-serif; white-space:nowrap; transition:all .15s;
+    }
+    .p-btn:hover { background:rgba(0,200,255,.18); }
+    .p-divider { height:1px; background:var(--border); margin:4px 0; }
+    .p-slider-row {
+      display:flex; align-items:center; gap:6px;
+    }
+    .p-slider {
+      flex:1; -webkit-appearance:none; appearance:none;
+      height:3px; background:var(--border); border-radius:2px;
+      outline:none; cursor:pointer;
+    }
+    .p-slider::-webkit-slider-thumb {
+      -webkit-appearance:none; width:13px; height:13px;
+      border-radius:50%; background:var(--accent);
+      box-shadow:0 0 4px rgba(0,200,255,.5); cursor:pointer;
+    }
+    .p-sval {
+      font-family:'Share Tech Mono',monospace; font-size:10px;
+      color:var(--accent); width:26px; text-align:right; flex-shrink:0;
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────────────── */
+    .sidebar {
+      width:248px; flex-shrink:0;
+      display:flex; flex-direction:column;
+      border-left:1px solid var(--border);
+      background:var(--surf);
+      overflow:hidden;
+    }
+    .sb-head { padding:10px 13px; font-size:9px; letter-spacing:2.5px; text-transform:uppercase; color:var(--sub); border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sb-stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sb-stat { padding:10px 6px; text-align:center; border-right:1px solid var(--border); }
+    .sb-stat:last-child { border-right:none; }
+    .sb-n { font-family:'Share Tech Mono',monospace; font-size:20px; line-height:1; color:var(--text); }
+    .sb-n.ca { color:var(--accent); }
+    .sb-n.cw { color:var(--warn); }
+    .sb-n.cd { color:var(--danger); }
+    .sb-l { font-size:9px; color:var(--sub); letter-spacing:1px; text-transform:uppercase; margin-top:3px; }
+    .sb-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 13px; border-bottom:1px solid var(--border); flex-shrink:0; }
+    .sb-bar span { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--sub); }
+    .btn-csv { display:flex; align-items:center; gap:4px; padding:3px 8px; background:rgba(0,230,118,.07); border:1px solid rgba(0,230,118,.3); border-radius:4px; color:var(--green); font-size:10px; cursor:pointer; }
+    .btn-csv:hover { background:rgba(0,230,118,.15); }
+    .ev-list { flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; padding:5px; display:flex; flex-direction:column; gap:4px; }
+    .ev-list::-webkit-scrollbar { width:3px; }
+    .ev-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+    .ev-item { display:flex; gap:6px; padding:6px 7px; background:var(--card); border:1px solid var(--border); border-radius:5px; cursor:pointer; align-items:flex-start; transition:border-color .2s; flex-shrink:0; animation:evIn .2s ease; }
+    .ev-item:hover { border-color:var(--accent); }
+    .ev-item.h { border-left:3px solid var(--danger); }
+    .ev-item.m { border-left:3px solid var(--warn); }
+    .ev-item.l { border-left:3px solid var(--accent); }
+    .ev-thumb { width:34px; height:24px; border-radius:3px; object-fit:cover; flex-shrink:0; background:#000; border:1px solid var(--border); }
+    .ev-info  { flex:1; min-width:0; }
+    .ev-type  { font-size:10px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ev-meta  { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--sub); margin-top:2px; display:flex; gap:5px; align-items:center; }
+    .ev-cam   { font-size:8px; padding:1px 4px; border-radius:2px; background:rgba(0,200,255,.08); color:var(--accent); border:1px solid rgba(0,200,255,.2); flex-shrink:0; }
+    .ev-empty { text-align:center; color:var(--muted); font-size:11px; padding:24px 0; letter-spacing:1px; }
+    @keyframes evIn { from{opacity:0;transform:translateX(6px)} to{opacity:1;transform:none} }
+
+    /* ── LOADING OVERLAY ────────────────────────────────── */
+    .model-loader {
+      position:fixed; inset:0; z-index:8000;
+      background:rgba(6,9,13,0.97);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:20px; font-family:'Share Tech Mono',monospace;
+    }
+    .model-loader.hidden { display:none; }
+    .ml-logo {
+      font-size:22px; letter-spacing:6px; color:var(--accent);
+      text-shadow:0 0 20px rgba(0,200,255,0.5);
+      animation:mlPulse 2s infinite;
+    }
+    .ml-title { font-size:11px; letter-spacing:3px; color:var(--sub); text-transform:uppercase; }
+    .ml-models { display:flex; flex-direction:column; gap:10px; width:320px; }
+    .ml-model { display:flex; flex-direction:column; gap:5px; }
+    .ml-model-name { font-size:9px; letter-spacing:2px; color:var(--sub); display:flex; justify-content:space-between; }
+    .ml-model-name span { color:var(--accent); }
+    .ml-bar-bg { height:3px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+    .ml-bar { height:100%; background:var(--accent); border-radius:2px; width:0%; transition:width .3s ease; box-shadow:0 0 8px rgba(0,200,255,0.6); }
+    .ml-bar.done { background:var(--green); box-shadow:0 0 8px rgba(0,230,118,0.6); }
+    .ml-bar.err  { background:var(--danger); box-shadow:0 0 8px rgba(255,58,58,0.6); }
+    .ml-status { font-size:9px; color:var(--muted); letter-spacing:1px; text-align:center; margin-top:6px; }
+    .ml-tip {
+      font-size:10px; color:var(--muted); text-align:center; max-width:340px;
+      line-height:1.8; border-top:1px solid var(--border); padding-top:16px;
+    }
+    .ml-tip b { color:var(--sub); }
+    @keyframes mlPulse {
+      0%,100% { text-shadow:0 0 12px rgba(0,200,255,0.4); }
+      50%      { text-shadow:0 0 28px rgba(0,200,255,0.9); }
+    }
+    .ml-spinner {
+      width:36px; height:36px;
+      border:2px solid rgba(0,200,255,0.15);
+      border-top-color:var(--accent);
+      border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── UPGRADE WALL ────────────────────────────────────── */
+    .upgrade-wall { position:fixed; inset:0; z-index:9000; background:rgba(6,9,13,.96); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; }
+    .upgrade-wall.hidden { display:none; }
+    .uw-icon  { font-size:48px; }
+    .uw-title { font-family:'Share Tech Mono',monospace; font-size:18px; letter-spacing:4px; color:var(--warn); }
+    .uw-sub   { font-size:13px; color:var(--sub); max-width:360px; line-height:1.7; }
+    .uw-btn   { padding:11px 28px; background:rgba(255,170,0,.1); border:1px solid var(--warn); border-radius:6px; color:var(--warn); font-size:12px; font-weight:700; letter-spacing:2px; cursor:pointer; text-decoration:none; transition:all .25s; display:inline-block; }
+    .uw-btn:hover { background:rgba(255,170,0,.2); }
+
+    /* ── MODAL ───────────────────────────────────────────── */
+    .modal-back { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-back.hidden { display:none; }
+    .modal-box  { background:var(--card); border:1px solid rgba(0,200,255,.2); border-radius:11px; width:100%; max-width:500px; overflow:hidden; }
+    .modal-hdr  { display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--border); }
+    .modal-hdr h3 { font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px; color:var(--accent); }
+    .modal-close { background:none; border:none; color:var(--sub); font-size:16px; cursor:pointer; }
+    .modal-close:hover { color:var(--danger); }
+    .modal-img  { width:100%; max-height:280px; object-fit:contain; background:#000; display:block; }
+    .modal-meta { padding:13px 16px; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--sub); line-height:1.8; }
+
+    @media(max-width:900px) {
+      html,body { overflow:auto; }
+      .app { flex-direction:column; height:auto; }
+      .grid { grid-template-columns:1fr; height:auto; overflow:visible; }
+      .cell { height:300px; }
+      .sidebar { width:100%; border-left:none; border-top:1px solid var(--border); height:400px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="model-loader" id="modelLoader">
+  <div class="ml-spinner"></div>
+  <div class="ml-logo">SSIP</div>
+  <div class="ml-title">Inicializando sistema de detección</div>
+  <div class="ml-models">
+    <div class="ml-model">
+      <div class="ml-model-name">YOLOv8n · Pose &amp; Esqueleto <span id="mlPoseStatus">cargando…</span></div>
+      <div class="ml-bar-bg"><div class="ml-bar" id="mlPoseBar"></div></div>
+    </div>
+    <div class="ml-model">
+      <div class="ml-model-name">YOLOv8n · Detección de Objetos <span id="mlObjStatus">en espera…</span></div>
+      <div class="ml-bar-bg"><div class="ml-bar" id="mlObjBar"></div></div>
+    </div>
+  </div>
+  <div class="ml-status" id="mlStatusTxt">Descargando modelo… puede tardar unos segundos</div>
+  <div class="ml-tip">
+    <b>Primera vez:</b> los modelos se descargan una vez y quedan en caché.<br>
+    Las próximas cargas serán casi instantáneas.
+  </div>
+</div>
+
+<div class="upgrade-wall hidden" id="upgradeWall">
+  <div class="uw-icon">🔒</div>
+  <div class="uw-title">PLAN PROFESIONAL</div>
+  <p class="uw-sub">La vista multi-cámara está disponible en el plan Profesional.<br>Contactá con tu administrador para actualizar tu plan.</p>
+  <a href="dashboard.html" class="uw-btn">← Volver al panel</a>
+</div>
+
+<header class="hdr">
+  <span class="hdr-logo">SSIP</span>
+  <span class="hdr-badge">PRO · MULTI-CAM</span>
+  <span class="hdr-emp" id="hEmp">—</span>
+  <div class="hdr-r">
+    <div class="hdr-alerts" id="hAlerts"><div class="hdr-dot"></div><span id="hAlertsNum">0 alertas</span></div>
+    <div class="hdr-time" id="hTime">--:--:--</div>
+    <a href="dashboard.html" class="hdr-btn">← Panel</a>
+    <a href="monitor.html"   class="hdr-btn">Cam única</a>
+  </div>
+</header>
+
+<div class="app">
+  <div class="grid" id="camsGrid">
+
+    <!-- Generado por JS para evitar repetición -->
+
+  </div>
+
+  <aside class="sidebar">
+    <div class="sb-head">Estado multi-cámara</div>
+    <div class="sb-stats">
+      <div class="sb-stat"><div class="sb-n ca" id="statTotal">0</div><div class="sb-l">Eventos</div></div>
+      <div class="sb-stat"><div class="sb-n cw" id="statCams">0/3</div><div class="sb-l">Activas</div></div>
+      <div class="sb-stat"><div class="sb-n cd" id="statAlerts">0</div><div class="sb-l">Alertas</div></div>
+    </div>
+    <div class="sb-bar"><span>Historial</span><button class="btn-csv" id="btnCSV">⬇ CSV</button></div>
+    <div class="ev-list" id="evList"><div class="ev-empty">Sin eventos en esta sesión</div></div>
+  </aside>
+</div>
+
+<div class="modal-back hidden" id="modalBack">
+  <div class="modal-box">
+    <div class="modal-hdr"><h3 id="modalTitle">EVENTO</h3><button class="modal-close" id="modalClose">✕</button></div>
+    <img id="modalImg" class="modal-img" src="" alt="snapshot"/>
+    <div class="modal-meta" id="modalMeta"></div>
+  </div>
+</div>
+
+<script type="module">
+import { onAuth, getEmpresa, getPlanEmpresa, guardarEvento } from './firebase-config.js';
+import { ZoneManager }     from './zones.js';
+import { DetectionEngine } from './detection.js';
+import { AlertManager }    from './alerts.js';
+
+setInterval(() => {
+  const el = document.getElementById('hTime');
+  if (el) el.textContent = new Date().toLocaleTimeString('es-UY',{hour12:false});
+}, 1000);
+
+onAuth(async (user) => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  const [plan, empresa] = await Promise.all([getPlanEmpresa(user.uid), getEmpresa(user.uid)]);
+  document.getElementById('hEmp').textContent = empresa?.nombre || user.email;
+  if (!plan.multiview) { document.getElementById('upgradeWall').classList.remove('hidden'); return; }
+  initMultiCam(user.uid, plan);
+});
+
+// ════════════════════════════════════════════════════
+function initMultiCam(empresaId, plan) {
+  const NUM = plan.camaras; // 3
+
+  // ── Build cell HTML ─────────────────────────────────
+  const grid = document.getElementById('camsGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < NUM; i++) {
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="cell" id="cell${i}">
+        <div class="cell-hdr">
+          <span class="cell-num">CAM ${i+1}</span>
+          <span class="cell-name" id="name${i}">Sin señal</span>
+          <span class="cell-badge off" id="badge${i}">OFFLINE</span>
+        </div>
+        <div class="cell-wrap" id="wrap${i}">
+          <video id="vid${i}" class="cell-video" autoplay playsinline muted style="display:none;"></video>
+          <canvas id="cvs${i}" class="cell-canvas"></canvas>
+          <div class="cell-nosig" id="nosig${i}">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2">
+              <rect x="4" y="8" width="40" height="28" rx="3"/>
+              <path d="M16 36v4M32 36v4M12 40h24"/>
+              <line x1="14" y1="18" x2="34" y2="18" stroke-dasharray="4 3"/>
+            </svg>
+            <span>Sin señal de video</span>
+            <small>Abrí ⚙ para conectar esta cámara</small>
+          </div>
+          <div class="cell-alert" id="ovl${i}">
+            <div class="cell-alert-border"></div>
+            <span class="cell-alert-txt" id="atxt${i}">⚠ ALERTA</span>
+          </div>
+        </div>
+        <!-- Config panel (slides up) -->
+        <div class="cell-panel" id="panel${i}">
+          <div class="panel-inner">
+            <div class="p-row">
+              <span class="p-lbl">Fuente</span>
+              <button class="p-tab on" data-cam="${i}" data-src="webcam">📷 Webcam</button>
+              <button class="p-tab"    data-cam="${i}" data-src="webrtc">🌐 IP / RTC</button>
+              <button class="p-tab"    data-cam="${i}" data-src="file">📁 Archivo</button>
+              <input type="file" id="file${i}" accept="video/*" style="display:none"/>
+            </div>
+            <div class="p-row" id="devRow${i}">
+              <span class="p-lbl">Cámara</span>
+              <select class="p-sel" id="sel${i}"><option value="">Detectando dispositivos…</option></select>
+            </div>
+            <div class="p-row" id="rtcRow${i}" style="display:none;">
+              <span class="p-lbl">URL</span>
+              <input class="p-url" id="rtcUrl${i}" type="text" placeholder="http://host:8083/api/webrtc?src=cam${i+1}"/>
+              <button class="p-btn" id="rtcBtn${i}">Conectar</button>
+            </div>
+            <div class="p-divider"></div>
+            <div class="p-slider-row">
+              <span class="p-lbl">Movim.</span>
+              <input type="range" class="p-slider" id="sldMov${i}" min="10" max="100" value="50"/>
+              <span class="p-sval" id="sldMovVal${i}">50</span>
+            </div>
+            <div class="p-slider-row">
+              <span class="p-lbl">Zona</span>
+              <input type="range" class="p-slider" id="sldDwell${i}" min="1" max="10" value="3"/>
+              <span class="p-sval" id="sldDwellVal${i}">3s</span>
+            </div>
+            <div class="p-slider-row">
+              <span class="p-lbl">Cooldown</span>
+              <input type="range" class="p-slider" id="sldCool${i}" min="2" max="30" value="8"/>
+              <span class="p-sval" id="sldCoolVal${i}">8s</span>
+            </div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="cell-foot">
+          <button class="fb" id="zoneBtn${i}" disabled>+ Zona</button>
+          <button class="fb" id="editBtn${i}" disabled title="Editar vértices de zona">✏ Editar</button>
+          <button class="fb" id="detectBtn${i}" disabled>▶ Analizar</button>
+          <span class="cell-fps" id="fps${i}">—</span>
+          <button class="fb-cfg" id="cfgBtn${i}" title="Configurar fuente de video">⚙</button>
+        </div>
+      </div>
+    `);
+  }
+
+  // ── Build cam state objects ─────────────────────────
+  const cams = Array.from({ length: NUM }, (_, i) => ({
+    idx: i,
+    video:     document.getElementById(`vid${i}`),
+    canvas:    document.getElementById(`cvs${i}`),
+    wrap:      document.getElementById(`wrap${i}`),
+    nosig:     document.getElementById(`nosig${i}`),
+    cell:      document.getElementById(`cell${i}`),
+    badge:     document.getElementById(`badge${i}`),
+    nameEl:    document.getElementById(`name${i}`),
+    alertOvl:  document.getElementById(`ovl${i}`),
+    alertTxt:  document.getElementById(`atxt${i}`),
+    fpsEl:     document.getElementById(`fps${i}`),
+    detectBtn: document.getElementById(`detectBtn${i}`),
+    zoneBtn:   document.getElementById(`zoneBtn${i}`),
+    editBtn:   document.getElementById(`editBtn${i}`),
+    stream: null, pc: null,
+    ready: false, detecting: false,
+    animId: null, alertTimer: null,
+    zm: null, de: null, am: null,
+  }));
+
+  let sessionEvents = [];
+  let activeAlerts  = 0;
+
+  // ── Engines ─────────────────────────────────────────
+  cams.forEach(cam => {
+    cam.zm = new ZoneManager(cam.canvas);
+    cam.am = new AlertManager(cam.canvas);
+    // Redirigir refs del AlertManager a elementos de esta celda
+    cam.am._alertOverlay = cam.alertOvl;
+    cam.am._alertText    = cam.alertTxt;
+    cam.am._eventsList   = null;
+    cam.am._statusBadge  = null;
+    cam.am._metricTotal  = null;
+    cam.am._metricToday  = null;
+    cam.am._metricActive = null;
+    // PATCH COMPLETO: reemplazamos trigger() entero para evitar crash
+    // alerts.js llama _renderEvent/_setSystemStatus/_updateMetrics con refs null
+    // En multicam manejamos todo directamente sin depender del AlertManager de monitor
+    cam.am.trigger = function(type, sev) {
+      // 1. Capturar snapshot con el video correcto de esta celda
+      let snapshot = '';
+      try {
+        const tmp = document.createElement('canvas');
+        tmp.width  = cam.canvas.width  || 640;
+        tmp.height = cam.canvas.height || 480;
+        const tctx = tmp.getContext('2d');
+        if (cam.video && cam.video.readyState >= 2)
+          tctx.drawImage(cam.video, 0, 0, tmp.width, tmp.height);
+        tctx.drawImage(cam.canvas, 0, 0);
+        snapshot = tmp.toDataURL('image/jpeg', 0.75);
+      } catch {}
+
+      // 2. Guardar en historial interno del AlertManager (para CSV si se necesita)
+      const event = {
+        id:        `mc-${Date.now()}-${cam.idx}`,
+        type, severity: sev,
+        timestamp: new Date().toISOString(),
+        timeStr:   new Date().toLocaleTimeString('es-UY',{hour12:false}),
+        snapshot,
+      };
+      this.events = this.events || [];
+      this.events.unshift(event);
+      if (this.events.length > 200) this.events = this.events.slice(0, 200);
+
+      // 3. Mostrar overlay visual en la celda
+      const dur = sev === 'high' ? 4500 : sev === 'medium' ? 3000 : 2000;
+      cam.alertOvl.classList.add('on');
+      cam.alertTxt.textContent = `⚠ ${type}`;
+      clearTimeout(cam._ovlTimer);
+      cam._ovlTimer = setTimeout(() => cam.alertOvl.classList.remove('on'), dur);
+
+      return event;
+    };
+    cam.de = new DetectionEngine(cam.canvas, cam.zm, cam.am, { movementThreshold:50, dwellTime:3, cooldown:6 });
+
+    // Envolver trigger para también llamar pushEvent y Firebase
+    const _amTrigger = cam.am.trigger.bind(cam.am);
+    cam.am.trigger = (type, sev) => {
+      const ev = _amTrigger(type, sev);
+      if (ev) pushEvent(cam.idx, type, sev, ev.snapshot || '');
+      return ev;
+    };
+    new ResizeObserver(() => {
+      const r = cam.wrap.getBoundingClientRect();
+      cam.canvas.width = r.width; cam.canvas.height = r.height;
+    }).observe(cam.wrap);
+  });
+
+  // ── Device selector ─────────────────────────────────
+  async function loadDevices(idx) {
+    const sel = document.getElementById(`sel${idx}`);
+    if (!sel) return;
+    try {
+      // Request permission so labels are visible
+      const tmp = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      tmp.getTracks().forEach(t => t.stop()); // release immediately
+      const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+      if (!devs.length) { sel.innerHTML = '<option value="">Sin cámaras detectadas</option>'; return; }
+      sel.innerHTML = devs.map((d, i) =>
+        `<option value="${d.deviceId}">${d.label || 'Cámara ' + (i+1)}</option>`
+      ).join('');
+      // Prefer external USB
+      const ext = devs.find(d => d.label && !/integrated|facetime|built.?in|internal/i.test(d.label));
+      const pref = ext || devs[devs.length - 1];
+      if (pref) sel.value = pref.deviceId;
+      if (!sel._bound) {
+        sel._bound = true;
+        sel.addEventListener('change', () => startWebcam(cams[idx]));
+      }
+    } catch { sel.innerHTML = '<option value="">Sin permiso de cámara</option>'; }
+  }
+
+  // ── Config panel toggle ──────────────────────────────
+  function closeAllPanels() {
+    document.querySelectorAll('.cell-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.fb-cfg').forEach(b => b.classList.remove('open'));
+  }
+
+  cams.forEach(cam => {
+    const cfgBtn = document.getElementById(`cfgBtn${cam.idx}`);
+    const panel  = document.getElementById(`panel${cam.idx}`);
+    cfgBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = panel.classList.contains('open');
+      closeAllPanels();
+      if (!wasOpen) {
+        panel.classList.add('open');
+        cfgBtn.classList.add('open');
+        loadDevices(cam.idx);
+      }
+    });
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.cell-panel') && !e.target.closest('.fb-cfg')) closeAllPanels();
+  });
+
+  // ── Source tabs ──────────────────────────────────────
+  document.querySelectorAll('.p-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = +btn.dataset.cam;
+      const src = btn.dataset.src;
+      document.querySelectorAll(`.p-tab[data-cam="${idx}"]`).forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById(`devRow${idx}`).style.display = src === 'webcam' ? '' : 'none';
+      document.getElementById(`rtcRow${idx}`).style.display = src === 'webrtc' ? '' : 'none';
+      if (src === 'webcam') { loadDevices(idx); startWebcam(cams[idx]); }
+      if (src === 'file')   document.getElementById(`file${idx}`).click();
+    });
+  });
+
+  cams.forEach(cam => {
+    const i = cam.idx;
+    document.getElementById(`rtcBtn${i}`).onclick = () => {
+      const url = document.getElementById(`rtcUrl${i}`).value.trim();
+      if (url) { closeAllPanels(); startWebRTC(cam, url); }
+    };
+    document.getElementById(`file${i}`).onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      stopCam(cam);
+      cam.video.srcObject = null;
+      cam.video.src = URL.createObjectURL(f);
+      cam.video.loop = true; cam.video.style.display = '';
+      cam.video.play().catch(() => {});
+      onReady(cam, f.name.slice(0, 24));
+      closeAllPanels();
+    };
+  });
+
+  // ── Webcam (with device selection) ───────────────────
+  async function startWebcam(cam) {
+    stopCam(cam);
+    try {
+      const deviceId = document.getElementById(`sel${cam.idx}`)?.value;
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 },
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
+        }, audio: false,
+      });
+      cam.stream = stream;
+      cam.video.srcObject = stream;
+      cam.video.style.display = '';
+      await cam.video.play();
+      const label = stream.getVideoTracks()[0]?.label || `Webcam ${cam.idx + 1}`;
+      onReady(cam, label.length > 26 ? label.slice(0, 24) + '…' : label);
+    } catch(e) {
+      console.warn(`Cam ${cam.idx} error:`, e.message);
+      setOffline(cam, e.name === 'NotReadableError' ? 'Cámara en uso por otro proceso' : 'Sin acceso a cámara');
+    }
+  }
+
+  // ── WebRTC ───────────────────────────────────────────
+  async function startWebRTC(cam, url) {
+    stopCam(cam);
+    try {
+      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      cam.pc = pc;
+      pc.ontrack = evt => {
+        if (evt.streams?.[0]) {
+          cam.video.srcObject = evt.streams[0]; cam.video.style.display = '';
+          cam.video.play(); onReady(cam, `IP Cam ${cam.idx + 1}`);
+        }
+      };
+      pc.addTransceiver('video', { direction: 'recvonly' });
+      const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+      const resp  = await fetch(url, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({ data: btoa(offer.sdp) }) });
+      const b64   = JSON.parse(await resp.text()).answer;
+      await pc.setRemoteDescription({ type:'answer', sdp: atob(b64) });
+    } catch { setOffline(cam, 'Error WebRTC'); }
+  }
+
+  // ── State helpers ────────────────────────────────────
+  function onReady(cam, name) {
+    cam.ready = true;
+    cam.nosig.style.display  = 'none';
+    cam.nameEl.textContent   = name;
+    cam.badge.textContent    = 'LIVE';
+    cam.badge.className      = 'cell-badge live';
+    cam.detectBtn.disabled   = false;
+    cam.zoneBtn.disabled     = false;
+    // editBtn enabled only when zones exist
+    if (cam.zm && cam.zm.zones.length > 0) cam.editBtn.disabled = false;
+    updateStats();
+  }
+  function setOffline(cam, msg = 'Sin señal') {
+    cam.ready = false;
+    cam.nameEl.textContent  = msg;
+    cam.badge.textContent   = 'OFFLINE';
+    cam.badge.className     = 'cell-badge off';
+    cam.nosig.style.display = '';
+    cam.video.style.display = 'none';
+    cam.detectBtn.disabled  = true;
+    cam.zoneBtn.disabled    = true;
+    if (cam.editBtn) cam.editBtn.disabled = true;
+    updateStats();
+  }
+  function stopCam(cam) {
+    if (cam.detecting) toggleDetect(cam);
+    cam.stream?.getTracks?.().forEach(t => t.stop());
+    cam.pc?.close(); cam.pc = null;
+    cam.video.srcObject = null; cam.video.src = '';
+    setOffline(cam);
+  }
+
+  // ── Detection ────────────────────────────────────────
+  cams.forEach(cam => {
+    cam.detectBtn.addEventListener('click', () => toggleDetect(cam));
+    cam.zoneBtn.addEventListener('click', () => {
+      if (!cam.ready) return;
+      const name = prompt(`Nombre de zona (Cámara ${cam.idx + 1}):`, `Zona ${cam.zm.zones.length + 1}`);
+      if (!name) return;
+      cam.zm.enableDraw(name);
+      cam.zoneBtn.classList.add('on'); cam.zoneBtn.textContent = '✓ Dibujando…';
+      cam.zm.onZoneChange(() => {
+        cam.zoneBtn.classList.remove('on'); cam.zoneBtn.textContent = '+ Zona';
+        // Enable edit button now that there's a zone
+        if (cam.zm.zones.length > 0) cam.editBtn.disabled = false;
+      });
+    });
+
+    cam.editBtn.addEventListener('click', () => {
+      if (!cam.ready || cam.zm.zones.length === 0) return;
+      const editing = cam.editBtn.classList.contains('on');
+      if (!editing) {
+        cam.zm.enableEdit();
+        cam.editBtn.classList.add('on'); cam.editBtn.textContent = '✓ Listo';
+      } else {
+        cam.zm.disableEdit();
+        cam.editBtn.classList.remove('on'); cam.editBtn.textContent = '✏ Editar';
+      }
+    });
+
+    // Sliders de sensibilidad por cámara
+    const _i = cam.idx;
+    const _sldMov   = document.getElementById(`sldMov${_i}`);
+    const _sldDwell = document.getElementById(`sldDwell${_i}`);
+    const _sldCool  = document.getElementById(`sldCool${_i}`);
+    if (_sldMov) _sldMov.addEventListener('input', () => {
+      document.getElementById(`sldMovVal${_i}`).textContent = _sldMov.value;
+      cam.de.updateConfig({ movementThreshold: +_sldMov.value });
+    });
+    if (_sldDwell) _sldDwell.addEventListener('input', () => {
+      document.getElementById(`sldDwellVal${_i}`).textContent = _sldDwell.value + 's';
+      cam.de.updateConfig({ dwellTime: +_sldDwell.value });
+    });
+    if (_sldCool) _sldCool.addEventListener('input', () => {
+      document.getElementById(`sldCoolVal${_i}`).textContent = _sldCool.value + 's';
+      cam.de.updateConfig({ cooldown: +_sldCool.value });
+    });
+  });
+
+  function toggleDetect(cam) {
+    if (!cam.ready) return;
+    cam.detecting = !cam.detecting;
+    if (cam.detecting) {
+      cam.de.start(); // resets counters + sets active=true
+      startLoop(cam);
+      cam.detectBtn.classList.add('on'); cam.detectBtn.textContent = '■ Detener';
+      cam.badge.textContent = 'ANALIZ.'; cam.badge.className = 'cell-badge live';
+    } else {
+      cam.de.stop();
+      if (cam.animId) { cancelAnimationFrame(cam.animId); cam.animId = null; }
+      cam.detectBtn.classList.remove('on'); cam.detectBtn.textContent = '▶ Analizar';
+      cam.badge.textContent = 'LIVE';
+    }
+  }
+
+  function startLoop(cam) {
+    let last = 0;
+    const loop = async ts => {
+      if (!cam.detecting) return;
+      if (ts - last >= 66) { // ~15fps
+        last = ts;
+        if (cam.video.readyState >= 2) await cam.de.processFrame(cam.video);
+        if (cam.fpsEl) cam.fpsEl.textContent = cam.de.currentFPS + ' FPS';
+      }
+      cam.animId = requestAnimationFrame(loop);
+    };
+    cam.animId = requestAnimationFrame(loop);
+  }
+
+  // ── Events ───────────────────────────────────────────
+  function pushEvent(camIdx, tipo, sev, snapshot) {
+    const now = new Date();
+    const ev  = { id:`mc-${Date.now()}-${camIdx}`, camIdx, tipo, sev, snapshot, timeStr: now.toLocaleTimeString('es-UY',{hour12:false}) };
+    sessionEvents.unshift(ev);
+    if (sessionEvents.length > 200) sessionEvents = sessionEvents.slice(0, 200);
+    renderEvent(ev); updateStats(); flashAlert(cams[camIdx], tipo, sev);
+    guardarEvento(empresaId, { tipo, severidad: sev, snapshot, camaraIdx: camIdx }).catch(() => {});
+  }
+
+  function flashAlert(cam, tipo, sev) {
+    const dur = { low:2000, medium:3000, high:4500 }[sev] || 3000;
+    cam.cell.classList.add('alerting');
+    cam.alertOvl.classList.add('on');
+    cam.alertTxt.textContent = `⚠ ${tipo}`;
+    cam.badge.textContent = 'ALERTA'; cam.badge.className = 'cell-badge alert';
+    activeAlerts++; updateAlertBadge();
+    clearTimeout(cam.alertTimer);
+    cam.alertTimer = setTimeout(() => {
+      cam.cell.classList.remove('alerting'); cam.alertOvl.classList.remove('on');
+      if (cam.ready) { cam.badge.textContent = cam.detecting ? 'ANALIZ.' : 'LIVE'; cam.badge.className = 'cell-badge live'; }
+      activeAlerts = Math.max(0, activeAlerts - 1); updateAlertBadge();
+    }, dur);
+  }
+
+  function updateAlertBadge() {
+    const el = document.getElementById('hAlerts');
+    document.getElementById('hAlertsNum').textContent = activeAlerts > 0 ? `${activeAlerts} alerta${activeAlerts > 1 ? 's' : ''}` : '0 alertas';
+    el.className = 'hdr-alerts' + (activeAlerts > 0 ? ' on' : '');
+  }
+
+  function renderEvent(ev) {
+    const list  = document.getElementById('evList');
+    const empty = list.querySelector('.ev-empty');
+    if (empty) empty.remove();
+    const cls  = ev.sev === 'high' ? 'h' : ev.sev === 'medium' ? 'm' : 'l';
+    const item = document.createElement('div');
+    item.className = `ev-item ${cls}`;
+    item.innerHTML = `
+      <img class="ev-thumb" src="${ev.snapshot||''}" alt=""/>
+      <div class="ev-info">
+        <div class="ev-type">${ev.tipo}</div>
+        <div class="ev-meta"><span>${ev.timeStr}</span><span class="ev-cam">CAM ${ev.camIdx+1}</span></div>
+      </div>`;
+    item.addEventListener('click', () => openModal(ev));
+    list.insertBefore(item, list.firstChild);
+    const items = list.querySelectorAll('.ev-item');
+    if (items.length > 60) items[items.length - 1].remove();
+  }
+
+  function updateStats() {
+    document.getElementById('statTotal').textContent  = sessionEvents.length;
+    document.getElementById('statCams').textContent   = cams.filter(c => c.ready).length + '/3';
+    document.getElementById('statAlerts').textContent = activeAlerts;
+  }
+
+  // ── Modal ────────────────────────────────────────────
+  function openModal(ev) {
+    document.getElementById('modalTitle').textContent = ev.tipo;
+    document.getElementById('modalImg').src   = ev.snapshot || '';
+    document.getElementById('modalImg').style.display = ev.snapshot ? 'block' : 'none';
+    document.getElementById('modalMeta').innerHTML = `ID: ${ev.id}<br>Hora: ${ev.timeStr}<br>Severidad: ${ev.sev.toUpperCase()}<br>Cámara: ${ev.camIdx + 1}`;
+    document.getElementById('modalBack').classList.remove('hidden');
+  }
+  document.getElementById('modalClose').onclick = () => document.getElementById('modalBack').classList.add('hidden');
+  document.getElementById('modalBack').onclick  = e => { if (e.target.id === 'modalBack') document.getElementById('modalBack').classList.add('hidden'); };
+
+  // ── CSV ──────────────────────────────────────────────
+  document.getElementById('btnCSV').addEventListener('click', () => {
+    if (!sessionEvents.length) { alert('Sin eventos para exportar.'); return; }
+    const csv = ['# SSIP Multi-Cam Export', 'ID,Hora,Camara,Tipo,Severidad',
+      ...sessionEvents.map(e => [e.id, e.timeStr, `Cam ${e.camIdx+1}`, `"${e.tipo}"`, e.sev].join(','))
+    ].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = `ssip_multicam_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+
+  // ── Init con pantalla de carga ──────────────────────
+  (async () => {
+    const loader     = document.getElementById('modelLoader');
+    const poseBar    = document.getElementById('mlPoseBar');
+    const poseStatus = document.getElementById('mlPoseStatus');
+    const objBar     = document.getElementById('mlObjBar');
+    const objStatus  = document.getElementById('mlObjStatus');
+    const statusTxt  = document.getElementById('mlStatusTxt');
+
+    // Animar la barra de pose mientras carga
+    function animateBar(bar, pct) { bar.style.width = pct + '%'; }
+
+    // Animación de progreso falsa pero informativa
+    let poseAnim = null;
+    let posePct  = 0;
+    poseAnim = setInterval(() => {
+      posePct = Math.min(posePct + Math.random() * 4, 85); // avanza hasta 85% solo
+      animateBar(poseBar, posePct);
+    }, 200);
+
+    statusTxt.textContent = 'Cargando YOLOv8n-pose… (primera vez puede tardar ~10s)';
+    console.log('%cSSIP Multi-Cam · Cargando modelos YOLOv8…', 'color:#ffaa00');
+
+    // Solo la primera cámara carga el modelo (singleton compartido)
+    let poseOk = false, objOk = false;
+    try {
+      await cams[0].de.init();
+      poseOk = true;
+      // El init() carga ambos modelos; si llegamos acá, pose está listo
+    } catch(e) {
+      console.error('Error cargando modelos:', e.message);
+      statusTxt.textContent = '⚠ Error: ' + e.message;
+    }
+
+    // Resto de cams comparten la sesión ya cargada
+    for (let i = 1; i < cams.length; i++) {
+      try { await cams[i].de.init(); } catch {}
+    }
+
+    // Actualizar UI de carga
+    clearInterval(poseAnim);
+
+    if (poseOk) {
+      animateBar(poseBar, 100);
+      poseBar.classList.add('done');
+      poseStatus.textContent = '✓ listo';
+      poseStatus.style.color = 'var(--green)';
+    } else {
+      animateBar(poseBar, 100);
+      poseBar.classList.add('err');
+      poseStatus.textContent = '✗ error';
+      poseStatus.style.color = 'var(--danger)';
+    }
+
+    // Estado del modelo de objetos
+    // Verificar si se cargó (la sesión ONNX existe en el módulo)
+    setTimeout(() => {
+      // Pequeño delay para que el status sea visible
+      const objLoaded = poseOk; // si pose cargó, el módulo intentó obj también
+      animateBar(objBar, 100);
+      if (objLoaded) {
+        objBar.classList.add('done');
+        objStatus.textContent = '✓ listo';
+        objStatus.style.color = 'var(--green)';
+        statusTxt.textContent = '✓ Sistema listo — conectando cámaras…';
+      } else {
+        objBar.classList.add('err');
+        objStatus.textContent = 'no disponible';
+        objStatus.style.color = 'var(--warn)';
+        statusTxt.textContent = poseOk
+          ? '⚠ yolov8n.onnx no encontrado — solo pose activo'
+          : '⚠ Verificá que los modelos .onnx estén en la carpeta del proyecto';
+      }
+    }, 400);
+
+    // Ocultar loader con fade después de mostrar el estado final
+    const hideDelay = poseOk ? 1000 : 3500;
+    setTimeout(() => {
+      if (loader) {
+        loader.style.transition = 'opacity .5s';
+        loader.style.opacity = '0';
+        setTimeout(() => loader.classList.add('hidden'), 500);
+      }
+    }, hideDelay);
+
+    if (!poseOk) return; // no continuar si el modelo no cargó
+
+    console.log('%c✓ Modelos listos · Multi-Cam PRO', 'color:#00e676;font-weight:bold');
+
+    // Auto-conectar CAM 1 con cámara preferida
+    await loadDevices(0);
+    await startWebcam(cams[0]);
+  })();
+
+} // end initMultiCam
+</script>
+</body>
+</html>
