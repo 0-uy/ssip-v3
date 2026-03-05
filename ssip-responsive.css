@@ -1,0 +1,272 @@
+/**
+ * ssip-responsive.css — SSIP v4.0
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Media queries para multicam.html y monitor.html
+ *
+ * BREAKPOINTS:
+ *   1280px  — laptop chico / tablet landscape  → sidebar se angosta
+ *    900px  — tablet portrait                  → layout vertical, grid 2 col
+ *    640px  — mobile landscape / tablet small  → grid 1 col, header compacto
+ *    480px  — mobile portrait                  → modo ultra-compacto
+ *
+ * USO:
+ *   En multicam.html y monitor.html, agregar antes de </head>:
+ *   <link rel="stylesheet" href="./ssip-responsive.css">
+ *
+ *   O pegar el contenido dentro del <style> existente de cada archivo.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPARTIDO — multicam.html + monitor.html
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Laptop chico / tablet landscape (≤1280px)
+   El sidebar se angosta y la tipografía del header escala un poco. */
+@media (max-width: 1280px) {
+
+  /* multicam: sidebar más angosto */
+  .sidebar { width: 210px; }
+
+  /* multicam: header botones más compactos */
+  .hdr-btn { padding: 4px 10px; font-size: 10px; }
+  .hdr-time { font-size: 14px; }
+
+  /* monitor: panel lateral más angosto si existe */
+  .p-panel, .side-panel { width: 260px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TABLET PORTRAIT (≤900px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+
+  /* ── General ──────────────────────────────────────────────────────────── */
+  html, body { overflow: auto; }
+
+  /* ── multicam: layout vertical ────────────────────────────────────────── */
+  .app {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  /* Grid pasa a 2 columnas */
+  .grid {
+    display: grid !important;     /* override flex-mode en tablet */
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto !important;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Celdas con altura fija para que el video no se aplaste */
+  .cell { height: 280px; }
+
+  /* El colapso horizontal no tiene sentido en mobile → deshabilitar */
+  .cell-collapse { display: none !important; }
+  .cell.collapsed {
+    flex: unset !important; max-width: unset !important;
+    min-width: unset !important; width: 100% !important;
+  }
+  .cell.collapsed .cell-wrap,
+  .cell.collapsed .cell-foot,
+  .cell.collapsed .cell-panel { display: flex !important; }
+  .cell.collapsed .cell-hdr {
+    flex-direction: row !important; height: auto !important;
+    padding: 6px 9px !important;
+  }
+  .cell.collapsed .cell-num { writing-mode: initial !important; transform: none !important; }
+  .cell.collapsed .cell-name,
+  .cell.collapsed .cell-badge,
+  .cell.collapsed .cell-fs { display: flex !important; }
+  .cell.collapsed .cell-cdot { display: none !important; }
+
+  /* Sidebar debajo del grid, full-width, altura acotada */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;       /* stats + eventos lado a lado */
+    border-left: none;
+    border-top: 1px solid var(--border);
+    height: auto;
+    max-height: 320px;
+    overflow: hidden;
+  }
+
+  /* En tablet la sidebar queda en dos columnas */
+  .sidebar > .sb-card:first-child { width: 220px; flex-shrink: 0; border-right: 1px solid var(--border); border-bottom: none; }
+  .sidebar > .sb-card:last-child, .sidebar > div:last-child { flex: 1; }
+
+  /* Header un poco más compacto */
+  .hdr { padding: 0 12px; gap: 8px; }
+  .hdr-emp { display: none; }   /* ocultar nombre empresa en tablet */
+
+  /* monitor: stack vertical */
+  .video-panel, .section.video-panel { flex: 1; }
+  .p-panel, .side-panel {
+    width: 100%;
+    max-height: 340px;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE LANDSCAPE / TABLET SMALL (≤640px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Header ───────────────────────────────────────────────────────────── */
+  .hdr { height: 44px; padding: 0 10px; gap: 6px; }
+  .hdr-logo  { font-size: 12px; letter-spacing: 3px; }
+  .hdr-badge { display: none; }           /* ocultar badge PRO en mobile */
+  .hdr-time  { font-size: 13px; letter-spacing: 1px; }
+  .hdr-btn   { padding: 4px 8px; font-size: 10px; }
+
+  /* Ocultar botones secundarios del header para no amontonar */
+  .hdr-btn.hdr-btn--secondary { display: none; }
+
+  /* Firebase status — solo ícono */
+  .fb-status { font-size: 9px; padding: 3px 6px; }
+
+  /* ── multicam: grid 1 columna ─────────────────────────────────────────── */
+  .app { height: auto; min-height: 100vh; }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .cell { height: 260px; }
+
+  /* Footer de celda: ocultar texto de botones, solo icono */
+  .fb { font-size: 9px; padding: 3px 6px; }
+  .cell-fps { display: none; }   /* FPS no aporta en mobile */
+
+  /* Sidebar compacta */
+  .sidebar {
+    flex-direction: column;
+    max-height: none;
+    overflow: visible;
+  }
+  .sidebar > .sb-card:first-child { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+
+  /* Stats más chicos */
+  .sb-n { font-size: 18px; }
+  .sb-l { font-size: 8px; }
+
+  /* monitor: tabs de fuente — texto más corto */
+  .source-tab { font-size: 10px; padding: 5px 8px; }
+
+  /* monitor: panel derecho full width */
+  .p-panel, .side-panel {
+    position: fixed;
+    inset: 0;
+    width: 100% !important;
+    max-height: 100vh;
+    z-index: 500;
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  /* Sliders más grandes para touch */
+  input[type="range"] { height: 20px; }
+  .p-slider  { height: 20px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE PORTRAIT (≤480px)
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* Header: solo logo + tiempo + alerta */
+  .hdr { height: 42px; padding: 0 8px; gap: 5px; }
+  .hdr-logo  { font-size: 11px; letter-spacing: 2px; }
+  .hdr-time  { font-size: 12px; }
+  .hdr-btn   { display: none; }          /* sin botones en header móvil */
+  .hdr-alerts { padding: 3px 7px; }
+  .fb-status  { display: none; }         /* sin estado firebase en header */
+
+  /* Celdas más altas en portrait para ver bien la imagen */
+  .cell { height: 240px; }
+
+  /* Footer minimalista */
+  .cell-foot { padding: 4px 6px; gap: 3px; }
+  .fb { font-size: 9px; padding: 2px 5px; }
+
+  /* cell badge — solo mostrar si hay alerta activa */
+  .cell-badge.off { display: none; }
+
+  /* Sidebar: acordeón colapsable — implementado por JS si hace falta */
+  .sidebar {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  /* Stats horizontales ajustados */
+  .sb-n { font-size: 16px; }
+  .sb-stat { padding: 7px 4px; }
+
+  /* Grid: celdas apiladas */
+  .grid { gap: 4px; padding: 4px; }
+
+  /* Header de monitor */
+  .app-header { padding: 0 8px; }
+  .brand-sub  { display: none; }     /* "Monitor en Vivo" → ocultar en portrait */
+
+  /* Source bar */
+  .source-bar { flex-wrap: wrap; gap: 4px; padding: 5px 8px; }
+  .source-tab { flex: 1 1 auto; text-align: center; }
+
+  /* Panel de config IP en monitor */
+  #ipConfig { flex-direction: column !important; }
+  #ipUrl    { width: 100% !important; }
+
+  /* modal de zona más angosto */
+  #zoneModal > div { width: calc(100vw - 24px) !important; padding: 18px !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOUCH — mejoras táctiles generales en cualquier ancho
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (pointer: coarse) {
+
+  /* Blancos de toque más grandes */
+  .cell-fs, .cell-collapse, .fb-cfg, .hdr-btn { min-width: 32px; min-height: 32px; }
+  .fb { padding: 5px 10px; }
+
+  /* Inputs range más fáciles de arrastrar */
+  input[type="range"] { height: 24px; cursor: grab; }
+  input[type="range"]:active { cursor: grabbing; }
+
+  /* Select más grande */
+  select { min-height: 34px; }
+
+  /* Sin hover en touch — evitar estados hover "pegados" */
+  .cell-fs:hover, .fb:hover, .hdr-btn:hover { background: transparent; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDSCAPE MOBILE — cuando el teléfono está horizontal
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-height: 500px) and (orientation: landscape) {
+
+  .hdr, .app-header { height: 38px; }
+  .app { height: calc(100vh - 38px); }
+
+  /* Grid 2 columnas en landscape mobile */
+  .grid {
+    grid-template-columns: 1fr 1fr !important;
+    height: 100%;
+    overflow: hidden;
+  }
+  .cell { height: auto; }   /* alto libre para llenar el espacio */
+
+  /* Sidebar se oculta en landscape mobile (priorizar cámaras) */
+  .sidebar { display: none; }
+
+  /* Footer de celda minimalista */
+  .cell-foot { padding: 3px 6px; }
+  .fb { padding: 2px 6px; font-size: 9px; }
+}

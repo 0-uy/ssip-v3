@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- SEO Primary -->
+<title>SSIP Proactive Security | Videovigilancia Predictiva con IA · Edge AI · YOLOv8</title>
+<meta name="description" content="SSIP es un sistema web de supervisión inteligente preventiva que integra cámaras IP, detección YOLO en tiempo real, zonas configurables por polígonos y alertas automáticas desde un dashboard centralizado. Ideal para Retail, Industria y Logística.">
+<meta name="keywords" content="videovigilancia predictiva, Edge AI, seguridad inteligente, SSIP, YOLOv8, detección de poses, retail security, cámaras IP, alertas tiempo real, seguridad industrial">
+<meta name="author" content="SSIP Proactive Security">
+<meta name="robots" content="index, follow">
+<meta name="language" content="es">
+<link rel="canonical" href="https://ssip-v3.netlify.app/">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ssip.ai/">
+<meta property="og:title" content="SSIP Proactive Security | IA en Videovigilancia">
+<meta property="og:description" content="Plataforma de videovigilancia predictiva con Edge AI. Detección de poses, zonas inteligentes y alertas en tiempo real para Retail, Industria y Logística.">
+<meta property="og:image" content="https://ssip.ai/og-image.jpg">
+<meta property="og:locale" content="es_ES">
+<meta property="og:site_name" content="SSIP Proactive Security">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://ssip.ai/">
+<meta name="twitter:title" content="SSIP Proactive Security | IA en Videovigilancia">
+<meta name="twitter:description" content="Plataforma de videovigilancia predictiva con Edge AI, detección de poses YOLOv8 y alertas en tiempo real.">
+<meta name="twitter:image" content="https://ssip.ai/og-image.jpg">
+
+<!-- Schema.org Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "SSIP Proactive Security",
+  "applicationCategory": "SecurityApplication",
+  "description": "Plataforma completa de videovigilancia predictiva con Edge AI, detección de poses YOLOv8 y alertas en tiempo real para Retail, Industria y Logística.",
+  "operatingSystem": "Web, Edge Devices",
+  "offers": { "@type": "Offer", "availability": "https://schema.org/InStock" },
+  "featureList": ["Edge AI Processing", "YOLOv8-Pose Detection", "Real-time Alerts", "Smart Zones", "Dashboard Analytics"],
+  "url": "https://ssip.ai"
+}
+</script>
+
+<!-- Preconnect for performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #020409;
+  --surface: #07090f;
+  --surface2: #0d1120;
+  --accent: #00d4ff;
+  --accent2: #7b61ff;
+  --danger: #ff3366;
+  --text: #e8edf5;
+  --muted: #5a6478;
+  --border: rgba(255,255,255,0.04);
+  --glow: 0 0 40px rgba(0,212,255,0.15), 0 0 80px rgba(0,212,255,0.07);
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ─── NOISE TEXTURE ─── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+
+/* ─── BACK BUTTON ─── */
+.back-btn {
+  position: fixed;
+  top: 24px; left: 24px;
+  z-index: 1000;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 18px;
+  background: rgba(7,9,15,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 50px;
+  color: var(--accent);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(0,212,255,0.1);
+}
+.back-btn:hover {
+  background: rgba(0,212,255,0.08);
+  border-color: rgba(0,212,255,0.5);
+  box-shadow: 0 0 30px rgba(0,212,255,0.25);
+  transform: translateX(-3px);
+}
+.back-btn svg { transition: transform 0.3s ease; }
+.back-btn:hover svg { transform: translateX(-3px); }
+
+/* ─── NAV ─── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 20px 40px;
+  background: linear-gradient(180deg, rgba(2,4,9,0.95) 0%, transparent 100%);
+  backdrop-filter: blur(8px);
+}
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent); }
+.nav-cta {
+  padding: 10px 22px;
+  background: var(--accent);
+  color: var(--bg) !important;
+  border-radius: 6px;
+  font-weight: 700 !important;
+}
+
+/* ─── GRID OVERLAY ─── */
+.grid-overlay {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  position: relative;
+  overflow: hidden;
+  padding: 0 6vw;
+}
+.hero-bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.orb1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(0,212,255,0.12) 0%, transparent 70%);
+  top: -100px; right: -100px;
+  animation: orb-pulse 8s ease-in-out infinite;
+}
+.orb2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(123,97,255,0.1) 0%, transparent 70%);
+  bottom: -50px; left: 10%;
+  animation: orb-pulse 12s ease-in-out infinite reverse;
+}
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.8; }
+  50% { transform: scale(1.15) translate(20px, -20px); opacity: 1; }
+}
+
+.hero-inner {
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: grid; grid-template-columns: 1fr 1fr;
+  align-items: center; gap: 60px;
+  position: relative; z-index: 2;
+  padding-top: 80px;
+}
+
+.hero-label {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  padding: 6px 14px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 4px;
+  width: fit-content;
+}
+.hero-label::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(4rem, 7vw, 8rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  margin-bottom: 28px;
+}
+.hero-title .line1 { color: var(--text); display: block; }
+.hero-title .line2 {
+  display: block;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 300;
+  max-width: 480px;
+  margin-bottom: 40px;
+  line-height: 1.8;
+}
+
+.hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+.btn-primary {
+  padding: 16px 36px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none; border-radius: 6px;
+  font-family: var(--font-body);
+  font-weight: 700; font-size: 0.9rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  cursor: pointer; text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 24px rgba(0,212,255,0.3);
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 36px rgba(0,212,255,0.45);
+}
+.btn-outline {
+  padding: 16px 36px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-weight: 500; font-size: 0.9rem;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  cursor: pointer; text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(0,212,255,0.04);
+}
+
+.hero-stats {
+  display: flex; gap: 32px; margin-top: 48px;
+  padding-top: 36px;
+  border-top: 1px solid var(--border);
+}
+.stat { display: flex; flex-direction: column; gap: 4px; }
+.stat-num {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, var(--text), var(--muted));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ─── HERO IMAGE ─── */
+.hero-visual {
+  position: relative;
+  display: flex; justify-content: center; align-items: center;
+}
+.hero-img-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--glow), 0 40px 80px rgba(0,0,0,0.6);
+}
+.hero-img-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,212,255,0.1) 100%);
+  z-index: 1; pointer-events: none;
+}
+.hero-img-wrap img {
+  width: 100%; max-width: 500px;
+  display: block;
+  border-radius: 16px;
+  transition: transform 0.6s ease;
+}
+.hero-img-wrap:hover img { transform: scale(1.03); }
+
+.hero-badge {
+  position: absolute;
+  bottom: -20px; left: -20px;
+  background: var(--surface2);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  z-index: 2;
+}
+.hero-badge span { color: var(--muted); display: block; margin-top: 4px; font-size: 0.65rem; }
+
+/* ─── SECTIONS ─── */
+section { position: relative; z-index: 1; }
+.section-pad { padding: 100px 6vw; }
+.container { max-width: 1200px; margin: 0 auto; width: 100%; }
+
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-eyebrow::before {
+  content: '';
+  width: 32px; height: 1px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 4vw, 4.5rem);
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  margin-bottom: 24px;
+}
+.section-sub {
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 300;
+  max-width: 600px;
+  line-height: 1.8;
+}
+
+/* ─── FLOW SECTION ─── */
+.flow-section { background: var(--surface); }
+
+.flow-track {
+  display: flex; align-items: stretch;
+  gap: 0; margin-top: 60px;
+  position: relative;
+}
+.flow-track::before {
+  content: '';
+  position: absolute;
+  top: 36px; left: 36px; right: 36px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+  opacity: 0.3;
+}
+
+.flow-step {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 20px;
+  position: relative;
+}
+.flow-num {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid rgba(0,212,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-bottom: 24px;
+  position: relative; z-index: 1;
+  transition: all 0.3s ease;
+}
+.flow-step:hover .flow-num {
+  background: rgba(0,212,255,0.1);
+  box-shadow: 0 0 30px rgba(0,212,255,0.3);
+}
+.flow-step-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.flow-step-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ─── FEATURES SECTION ─── */
+.features-section { background: var(--bg); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  margin-top: 60px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.feature-card {
+  background: var(--surface);
+  padding: 40px 36px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.feature-card:hover { background: var(--surface2); }
+.feature-card:hover::before { transform: scaleX(1); }
+
+.feature-icon {
+  width: 48px; height: 48px;
+  background: rgba(0,212,255,0.08);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  font-size: 1.4rem;
+}
+.feature-title {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+}
+.feature-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.feature-tag {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 4px 10px;
+  background: rgba(0,212,255,0.06);
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ─── USE CASES ─── */
+.cases-section { background: var(--surface); }
+.cases-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; }
+.case-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 36px 28px;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+.case-card:hover {
+  border-color: rgba(0,212,255,0.2);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 30px rgba(0,212,255,0.08);
+}
+.case-sector {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+}
+.case-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.case-list { list-style: none; }
+.case-list li {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.case-list li:last-child { border-bottom: none; }
+.case-list li::before { content: '↳'; color: var(--accent); opacity: 0.5; }
+
+/* ─── TECH SECTION ─── */
+.tech-section { background: var(--bg); }
+.tech-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center;
+  margin-top: 60px;
+}
+.tech-specs { display: flex; flex-direction: column; gap: 20px; }
+.spec-row {
+  display: flex; align-items: center;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  gap: 20px;
+  transition: all 0.3s ease;
+}
+.spec-row:hover {
+  border-color: rgba(0,212,255,0.2);
+  background: var(--surface2);
+}
+.spec-key {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  min-width: 140px;
+}
+.spec-val {
+  font-size: 0.9rem;
+  color: var(--text);
+  font-weight: 500;
+}
+.tech-metrics {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+.metric-card:hover {
+  border-color: rgba(0,212,255,0.2);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px rgba(0,212,255,0.06);
+}
+.metric-value {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.metric-unit { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); opacity: 0.6; }
+.metric-label { font-size: 0.8rem; color: var(--muted); margin-top: 8px; line-height: 1.4; }
+
+/* ─── CTA SECTION ─── */
+.cta-section {
+  background: var(--surface);
+  padding: 120px 6vw;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  width: 800px; height: 800px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 60%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cta-title {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 7rem);
+  letter-spacing: 0.02em;
+  line-height: 0.9;
+  margin-bottom: 28px;
+}
+.cta-sub {
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 300;
+  max-width: 500px;
+  margin: 0 auto 48px;
+  line-height: 1.8;
+}
+.cta-actions {
+  display: flex; gap: 16px;
+  justify-content: center; flex-wrap: wrap;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 64px 6vw 36px;
+}
+.footer-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 48px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.footer-left { display: flex; flex-direction: column; gap: 12px; }
+.footer-logo {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.footer-tagline {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 240px;
+}
+.footer-links {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.footer-links-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+.footer-links a {
+  font-size: 0.85rem; color: var(--muted);
+  text-decoration: none; transition: color 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.footer-links a:hover { color: var(--accent); }
+.footer-links a::before { content: '→'; opacity: 0.3; font-size: 0.75rem; transition: opacity 0.2s; }
+.footer-links a:hover::before { opacity: 1; }
+
+.footer-nodepath {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 14px;
+}
+.nodepath-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.nodepath-logo-wrap {
+  display: flex; align-items: center; gap: 14px;
+  text-decoration: none;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+.nodepath-logo-wrap:hover {
+  border-color: rgba(0,212,255,0.25);
+  background: var(--surface2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.nodepath-logo-wrap img {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.nodepath-info { display: flex; flex-direction: column; gap: 2px; }
+.nodepath-name {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.nodepath-name span { color: #3b82f6; }
+.nodepath-sub {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.nodepath-services {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.6;
+  max-width: 260px;
+}
+.nodepath-services strong { color: var(--text); font-weight: 500; }
+
+.footer-bottom {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px;
+}
+.footer-copy {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 900px) {
+  .footer-inner { grid-template-columns: 1fr; }
+  .footer-nodepath { align-items: flex-start; }
+  .nodepath-services { text-align: left; }
+}
+
+/* ─── SCROLL ANIMATIONS ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero-visual { display: none; }
+  .flow-track { flex-direction: column; align-items: flex-start; gap: 24px; }
+  .flow-track::before { display: none; }
+  .flow-step { flex-direction: row; align-items: flex-start; padding: 0; gap: 20px; }
+  .flow-num { flex-shrink: 0; margin-bottom: 0; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .cases-grid { grid-template-columns: 1fr; }
+  .tech-inner { grid-template-columns: 1fr; }
+  .tech-metrics { grid-template-columns: 1fr 1fr; }
+  nav { padding: 16px 20px; }
+  .nav-links { gap: 16px; }
+  .hero-stats { flex-wrap: wrap; gap: 20px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ─── BACK BUTTON ─── -->
+<a href="index.html" class="back-btn" title="Volver a la página anterior" aria-label="Volver a la página anterior">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M19 12H5M12 19l-7-7 7-7"/>
+  </svg>
+  Volver
+</a>
+
+<!-- ─── NAV ─── -->
+<nav role="navigation" aria-label="Navegación principal">
+  <ul class="nav-links">
+    <li><a href="#flujo">Cómo funciona</a></li>
+    <li><a href="#features">Capacidades</a></li>
+    <li><a href="#sectores">Sectores</a></li>
+    <li><a href="#tecnologia">Tecnología</a></li>
+    <li><a href="https://nodepathstudio.com/#contacto" target="_blank" rel="noopener" class="nav-cta">Contacto</a></li>
+  </ul>
+</nav>
+
+<!-- ─── HERO ─── -->
+<header class="hero" role="banner" id="inicio">
+  <div class="grid-overlay"></div>
+  <div class="hero-bg-orb orb1" aria-hidden="true"></div>
+  <div class="hero-bg-orb orb2" aria-hidden="true"></div>
+
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-label" role="text">SSIP v3 · Sistema de Supervisión Inteligente Preventiva</div>
+      <h1 class="hero-title">
+        <span class="line1">PROACTIVE</span>
+        <span class="line2">SECURITY</span>
+      </h1>
+      <p class="hero-desc">
+        Sistema web de supervisión inteligente que integra cámaras IP, detección YOLO en tiempo real, zonas configurables por polígonos y alertas automáticas — todo desde un dashboard centralizado sin backend complejo.
+      </p>
+      <div class="hero-actions">
+        <a href="https://nodepathstudio.com/#contacto" target="_blank" rel="noopener" class="btn-primary" aria-label="Contactar al equipo de SSIP">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/>
+          </svg>
+          Contactar
+        </a>
+        <a href="#flujo" class="btn-outline" aria-label="Conocer la arquitectura técnica">
+          Arquitectura
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 17L17 7M17 7H7M17 7v10"/>
+          </svg>
+        </a>
+      </div>
+      <div class="hero-stats" aria-label="Estadísticas clave">
+        <div class="stat">
+          <span class="stat-num">Multi</span>
+          <span class="stat-label">Cámaras IP</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">YOLO</span>
+          <span class="stat-label">Detección en vivo</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">24/7</span>
+          <span class="stat-label">Monitoreo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="hero-img-wrap">
+        <img src="cm.png" alt="SSIP Proactive Security - Dashboard de videovigilancia predictiva con IA" loading="eager" width="500">
+        <div class="hero-badge">
+          SSIP v3 · ACTIVO
+          <span>YOLO · Multi-Cámara IP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ─── FLOW SECTION ─── -->
+<section class="flow-section section-pad" id="flujo" aria-labelledby="flujo-title">
+  <div class="container">
+    <div class="section-eyebrow">Cómo funciona</div>
+    <h2 class="section-title" id="flujo-title">FLUJO DE SSIP</h2>
+    <p class="section-sub">Desde el acceso al dashboard hasta la gestión de eventos — un flujo completo de supervisión inteligente en 6 pasos.</p>
+
+    <div class="flow-track" role="list" aria-label="Flujo de funcionamiento de SSIP">
+      <div class="flow-step reveal" role="listitem">
+        <div class="flow-num" aria-hidden="true">01</div>
+        <div>
+          <div class="flow-step-title">Ingreso & Visualización</div>
+          <div class="flow-step-desc">El usuario accede a la interfaz web con cámaras en vivo, panel de eventos e historial de alertas centralizado</div>
+        </div>
+      </div>
+      <div class="flow-step reveal reveal-delay-1" role="listitem">
+        <div class="flow-num" aria-hidden="true">02</div>
+        <div>
+          <div class="flow-step-title">Configuración de Cámaras</div>
+          <div class="flow-step-desc">Agrega cámaras IP por URL o credenciales. YOLO se integra automáticamente para análisis en tiempo real</div>
+        </div>
+      </div>
+      <div class="flow-step reveal reveal-delay-2" role="listitem">
+        <div class="flow-num" aria-hidden="true">03</div>
+        <div>
+          <div class="flow-step-title">Definición de Zonas</div>
+          <div class="flow-step-desc">Dibujá polígonos sobre el video para delimitar zonas: pago, sensible, crítica, góndola. Vértices editables e interactivos</div>
+        </div>
+      </div>
+      <div class="flow-step reveal reveal-delay-3" role="listitem">
+        <div class="flow-num" aria-hidden="true">04</div>
+        <div>
+          <div class="flow-step-title">Detección & Alerta</div>
+          <div class="flow-step-desc">SSIP detecta movimientos y eventos en las zonas. Genera alertas visuales con timestamp, cámara y tipo de zona asociados</div>
+        </div>
+      </div>
+      <div class="flow-step reveal reveal-delay-4" role="listitem">
+        <div class="flow-num" aria-hidden="true">05</div>
+        <div>
+          <div class="flow-step-title">Historial & Análisis</div>
+          <div class="flow-step-desc">Cada evento queda registrado. Filtrado por cámara, zona o tipo. Revisión de video previo al evento con almacenamiento integrado</div>
+        </div>
+      </div>
+      <div class="flow-step reveal reveal-delay-5" role="listitem">
+        <div class="flow-num" aria-hidden="true">06</div>
+        <div>
+          <div class="flow-step-title">Gestión & Control</div>
+          <div class="flow-step-desc">Panel centralizado: activación de cámaras, configuración de zonas, estadísticas de eventos y control operativo completo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section class="features-section section-pad" id="features" aria-labelledby="features-title">
+  <div class="container">
+    <div class="section-eyebrow">Capacidades del sistema</div>
+    <h2 class="section-title" id="features-title">LO QUE HACE SSIP</h2>
+    <p class="section-sub">Ocho capacidades reales que convierten cámaras IP comunes en un sistema de supervisión inteligente y preventiva.</p>
+
+    <div class="features-grid" role="list">
+      <article class="feature-card reveal" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3 class="feature-title">Detección YOLO en Tiempo Real</h3>
+        <p class="feature-desc">Motor de visión artificial YOLO integrado en cada cámara. Detecta objetos, personas y comportamientos anómalos frame a frame, sin demoras perceptibles.</p>
+        <span class="feature-tag">YOLO · Live</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-1" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3 class="feature-title">Zonas por Polígonos Editables</h3>
+        <p class="feature-desc">Dibujá y editá polígonos directamente sobre el video. Cada zona tiene tipo propio — pago, sensible, crítica, góndola — con coordenadas normalizadas para cualquier resolución.</p>
+        <span class="feature-tag">Geofencing · Interactivo</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-2" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h3 class="feature-title">Alertas Automáticas por Zona</h3>
+        <p class="feature-desc">Al detectarse un evento crítico dentro de una zona configurada, SSIP genera alertas visuales instantáneas con timestamp, cámara y tipo de zona asociados.</p>
+        <span class="feature-tag">Alertas · Visual</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-1" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h3 class="feature-title">Monitoreo Multi-Cámara IP</h3>
+        <p class="feature-desc">Conectá múltiples cámaras IP por URL o credenciales. El dashboard muestra todas las cámaras en vivo con panel de eventos unificado y control individual por cámara.</p>
+        <span class="feature-tag">Multi-Cam · IP</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-2" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </div>
+        <h3 class="feature-title">Historial con Filtrado Avanzado</h3>
+        <p class="feature-desc">Todos los eventos quedan registrados con timestamp. Filtrá por cámara, zona o tipo de evento. Con almacenamiento integrado, revisá el video anterior al incidente.</p>
+        <span class="feature-tag">Historial · Filtros</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-3" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/></svg>
+        </div>
+        <h3 class="feature-title">Dashboard Centralizado</h3>
+        <p class="feature-desc">Panel de control unificado: activación y desactivación de cámaras, configuración de zonas y tipos, estadísticas de eventos y supervisión operativa completa desde una sola interfaz web.</p>
+        <span class="feature-tag">Dashboard · Web</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-2" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <h3 class="feature-title">Normalización de Coordenadas</h3>
+        <p class="feature-desc">Las coordenadas de zonas se normalizan automáticamente para mantener consistencia entre distintas resoluciones, monitores y tamaños de pantalla. Escalable sin reconfiguración manual.</p>
+        <span class="feature-tag">Escalable · Multi-res</span>
+      </article>
+      <article class="feature-card reveal reveal-delay-3" role="listitem">
+        <div class="feature-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        </div>
+        <h3 class="feature-title">Sin Backend Complejo</h3>
+        <p class="feature-desc">Interfaz web amigable que funciona sin infraestructura de servidor compleja. Deployable en entornos ligeros, ideal para operaciones que necesitan seguridad inteligente sin fricción técnica.</p>
+        <span class="feature-tag">Lightweight · Web</span>
+      </article>
+    </div>
+  </div>
+</section>
+<!-- ─── SECTORS ─── -->
+<section class="cases-section section-pad" id="sectores" aria-labelledby="sectores-title">
+  <div class="container">
+    <div class="section-eyebrow">Casos de uso</div>
+    <h2 class="section-title" id="sectores-title">SECTORES</h2>
+    <p class="section-sub">SSIP adapta su motor de detección a los requisitos específicos de cada industria.</p>
+
+    <div class="cases-grid" role="list">
+      <article class="case-card reveal" role="listitem">
+        <div class="case-sector" aria-hidden="true">01</div>
+        <h3 class="case-title">Retail & Comercio</h3>
+        <div style="margin:16px 0;border-radius:8px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.4);border:1px solid rgba(0,212,255,0.1);">
+          <img src="ssip2.png" alt="Detección de hurto inteligente con análisis conductual y alertas en tiempo real - SSIP Retail" loading="lazy" width="100%" style="display:block;width:100%;transition:transform 0.5s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+        </div>
+        <ul class="case-list" aria-label="Aplicaciones en Retail">
+          <li>Detección de hurtos y comportamientos sospechosos</li>
+          <li>Análisis de flujo de clientes y zonas calientes</li>
+          <li>Alertas en cajas y almacenes restringidos</li>
+          <li>Control de aforo en tiempo real</li>
+        </ul>
+      </article>
+      <article class="case-card reveal reveal-delay-1" role="listitem">
+        <div class="case-sector" aria-hidden="true">02</div>
+        <h3 class="case-title">Industria & Manufactura</h3>
+        <ul class="case-list" aria-label="Aplicaciones en Industria">
+          <li>Detección de EPP y cumplimiento de seguridad</li>
+          <li>Alertas de intrusión en zonas de maquinaria</li>
+          <li>Monitoreo de postura y fatiga laboral</li>
+          <li>Detección de caídas y accidentes</li>
+        </ul>
+      </article>
+      <article class="case-card reveal reveal-delay-2" role="listitem">
+        <div class="case-sector" aria-hidden="true">03</div>
+        <h3 class="case-title">Logística & Almacenes</h3>
+        <ul class="case-list" aria-label="Aplicaciones en Logística">
+          <li>Control de acceso a zonas de carga</li>
+          <li>Detección de comportamientos de riesgo</li>
+          <li>Monitoreo de vehículos y carretillas</li>
+          <li>Gestión de inventario visual</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TECH SPECS ─── -->
+<section class="tech-section section-pad" id="tecnologia" aria-labelledby="tech-title">
+  <div class="container">
+    <div class="section-eyebrow">Especificaciones técnicas</div>
+    <h2 class="section-title" id="tech-title">TECNOLOGÍA</h2>
+    <p class="section-sub">Construido sobre herramientas probadas. Robusto, escalable y sin dependencias de infraestructura compleja.</p>
+
+    <div class="tech-inner">
+      <div class="tech-specs reveal" aria-label="Especificaciones del sistema">
+      <div style="margin-bottom:28px;border-radius:12px;overflow:hidden;box-shadow:var(--glow),0 30px 60px rgba(0,0,0,0.5);border:1px solid rgba(0,212,255,0.15);">
+        <img src="ing342.png" alt="SSIP Dashboard multi-cámara con análisis de comportamiento sospechoso en tiempo real" loading="lazy" width="100%" style="display:block;width:100%;border-radius:12px;transition:transform 0.5s ease;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+      </div>
+        <div class="spec-row">
+          <span class="spec-key">Motor IA</span>
+          <span class="spec-val">YOLO · Detección de objetos y personas</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Cámaras</span>
+          <span class="spec-val">IP · Conexión por URL o credenciales</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Zonas</span>
+          <span class="spec-val">Polígonos editables · Coordenadas normalizadas</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Tipos de Zona</span>
+          <span class="spec-val">Pago · Sensible · Crítica · Góndola</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Alertas</span>
+          <span class="spec-val">Visual en panel · Timestamp · Cámara</span>
+        </div>
+        <div class="spec-row">
+          <span class="spec-key">Despliegue</span>
+          <span class="spec-val">Interfaz web · Sin backend complejo</span>
+        </div>
+      </div>
+
+      <div class="tech-metrics reveal reveal-delay-1" aria-label="Métricas de rendimiento">
+        <div class="metric-card">
+          <div class="metric-value">∞</div>
+          <div class="metric-unit">Cams</div>
+          <div class="metric-label">Múltiples cámaras IP simultáneas</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">Live</div>
+          <div class="metric-unit">Feed</div>
+          <div class="metric-label">Video en tiempo real por cámara</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">4</div>
+          <div class="metric-unit">tipos</div>
+          <div class="metric-label">Tipos de zona configurables</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">24/7</div>
+          <div class="metric-unit"></div>
+          <div class="metric-label">Monitoreo continuo sin interrupciones</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ─── -->
+<section class="cta-section" id="contacto" aria-labelledby="cta-title">
+  <div class="grid-overlay" aria-hidden="true"></div>
+  <div style="position:relative;z-index:2">
+    <div class="section-eyebrow" style="justify-content:center;margin-bottom:24px">Hablemos</div>
+    <h2 class="cta-title" id="cta-title">
+      SEGURIDAD<br>
+      <span style="background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent">PROACTIVA</span>
+    </h2>
+    <p class="cta-sub">¿Querés saber más sobre SSIP o implementarlo en tu operación? Nuestro equipo está listo para ayudarte.</p>
+    <div class="cta-actions">
+      <a href="https://nodepathstudio.com/#contacto" target="_blank" rel="noopener" class="btn-primary" aria-label="Contactar al equipo de SSIP">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.63A2 2 0 012 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 8.09a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 15v1.92z"/>
+        </svg>
+        Contactar
+      </a>
+      <a href="#flujo" class="btn-outline" aria-label="Ver arquitectura técnica de SSIP">
+        Ver Arquitectura
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer role="contentinfo">
+  <div class="footer-inner">
+
+    <!-- Columna izquierda: SSIP -->
+    <div class="footer-left">
+      <div class="footer-logo">SSIP</div>
+      <p class="footer-tagline">Sistema de Supervisión Inteligente Preventiva. Videovigilancia con IA para Retail, Industria y Logística.</p>
+    </div>
+
+    <!-- Columna centro: links -->
+    <div class="footer-links">
+      <div class="footer-links-title">Navegación</div>
+      <a href="#flujo">Cómo funciona</a>
+      <a href="#features">Capacidades</a>
+      <a href="#sectores">Sectores</a>
+      <a href="#tecnologia">Tecnología</a>
+      <a href="https://nodepathstudio.com/#contacto" target="_blank" rel="noopener">Contacto</a>
+    </div>
+
+    <!-- Columna derecha: NodePath -->
+    <div class="footer-nodepath">
+      <div class="nodepath-label">Desarrollado por</div>
+      <a href="https://nodepathstudio.com" target="_blank" rel="noopener" class="nodepath-logo-wrap" aria-label="Visitar NodePath Studio">
+        <img src="nodepatlogo.png" alt="NodePath Studio - Smart Digital Solutions">
+        <div class="nodepath-info">
+          <div class="nodepath-name">Node<span>Path</span></div>
+          <div class="nodepath-sub">Smart Digital Solutions</div>
+        </div>
+      </a>
+      <p class="nodepath-services">
+        <strong>Desarrollo web & aplicaciones · IA a medida</strong><br>
+        Automatización · Dashboards · Software a medida<br>
+        <a href="https://nodepathstudio.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-size:0.75rem;">nodepathstudio.com →</a>
+      </p>
+    </div>
+
+  </div>
+
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2025 SSIP Proactive Security · v3.0</div>
+    <div class="footer-copy">Built by <a href="https://nodepathstudio.com" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">NodePath Studio</a></div>
+  </div>
+</footer>
+
+<!-- ─── SCROLL ANIMATION SCRIPT ─── -->
+<script>
+const revealElements = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+revealElements.forEach(el => observer.observe(el));
+
+// Smooth nav active state
+const sections = document.querySelectorAll('section[id], header[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => {
+        link.style.color = '';
+        if (link.getAttribute('href') === '#' + entry.target.id) {
+          link.style.color = 'var(--accent)';
+        }
+      });
+    }
+  });
+}, { threshold: 0.5 });
+
+sections.forEach(s => navObserver.observe(s));
+</script>
+
+</body>
+</html>
