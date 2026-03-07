@@ -1793,82 +1793,94 @@ export class DetectionEngine {
     }
     ctx.restore();
   }
+
  _drawDetections(poseDets) {
-  const ctx=this.ctx, cw=this.canvas.width, ch=this.canvas.height;
+  const ctx = this.ctx, cw = this.canvas.width, ch = this.canvas.height;
 
-  // Objetos
+  // =============================
+  // OBJETOS
+  // =============================
   for (const obj of this._objTracker.alertVisible) {
-    const {nx1,ny1,nx2,ny2}=obj.bbox;
-    const x1=nx1*cw,y1=ny1*ch,x2=nx2*cw,y2=ny2*ch;
 
-    const isBag=BAG_IDS.has(obj.cls);
+    const { nx1, ny1, nx2, ny2 } = obj.bbox;
+    const x1 = nx1 * cw;
+    const y1 = ny1 * ch;
+    const x2 = nx2 * cw;
+    const y2 = ny2 * ch;
 
-    // FIX: declarar primero
+    const isBag = BAG_IDS.has(obj.cls);
+
     const rawLabel = obj.label;
-    const confPct  = Math.round(obj.conf * 100);
+    const confPct = Math.round(obj.conf * 100);
+
     const isBagLow = isBag && obj.conf < 0.62;
     const isAnyLow = obj.conf < 0.45;
 
-    // Color por certeza
-    const col = isBagLow  ? 'rgba(140,140,160,0.6)'
-              : isBag     ? 'rgba(191,90,242,0.9)'
-              : isAnyLow  ? 'rgba(180,130,0,0.65)'
-              :             'rgba(255,170,0,0.85)';
+    const col =
+      isBagLow ? 'rgba(140,140,160,0.6)' :
+      isBag ? 'rgba(191,90,242,0.9)' :
+      isAnyLow ? 'rgba(180,130,0,0.65)' :
+      'rgba(255,170,0,0.85)';
 
     ctx.save();
-    ctx.strokeStyle=col;
-    ctx.lineWidth=1.8;
 
-    ctx.setLineDash([4,3]);
-    ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.8;
+
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
     ctx.setLineDash([]);
 
-    // Label inteligente
-    const dispLabel = isBagLow  ? `OBJETO? ${confPct}%`
-                    : isAnyLow  ? `${rawLabel}? ${confPct}%`
-                    :             `${rawLabel} ${confPct}%`;
+    const dispLabel =
+      isBagLow ? `OBJETO? ${confPct}%` :
+      isAnyLow ? `${rawLabel}? ${confPct}%` :
+      `${rawLabel} ${confPct}%`;
 
     const lbl = dispLabel;
 
-    ctx.font='9px "Share Tech Mono",monospace';
-    const lw2=ctx.measureText(lbl).width+6;
+    ctx.font = '9px "Share Tech Mono",monospace';
 
-    ctx.fillStyle=isBag
+    const lw2 = ctx.measureText(lbl).width + 6;
+
+    ctx.fillStyle = isBag
       ? 'rgba(191,90,242,0.15)'
       : 'rgba(255,170,0,0.15)';
 
-    ctx.fillRect(x1,y1-14,lw2,13);
+    ctx.fillRect(x1, y1 - 14, lw2, 13);
 
-    ctx.fillStyle=col;
-    ctx.fillText(lbl,x1+3,y1-4);
+    ctx.fillStyle = col;
+    ctx.fillText(lbl, x1 + 3, y1 - 4);
 
     ctx.restore();
   }
 
-  // Personas
+  // =============================
+  // PERSONAS
+  // =============================
   for (const det of poseDets) {
 
-    const k=det.kps;
+    const k = det.kps;
 
-    const x1=det.nx1*cw;
-    const y1=det.ny1*ch;
-    const x2=det.nx2*cw;
-    const y2=det.ny2*ch;
+    const x1 = det.nx1 * cw;
+    const y1 = det.ny1 * ch;
+    const x2 = det.nx2 * cw;
+    const y2 = det.ny2 * ch;
 
-    const track=this._tracks.find(t=>!t.missed && this._iou(t,det)>0.3);
+    const track = this._tracks.find(t => !t.missed && this._iou(t, det) > 0.3);
 
-    const isEmp=track?.isEmployee;
-    const inZone=track && Object.values(track.inZoneWrist||{}).some(v=>v);
+    const isEmp = track?.isEmployee;
 
-    const hasPost=track?.postContact && !track.postContact.fired;
+    const inZone = track && Object.values(track.inZoneWrist || {}).some(v => v);
 
-    const scanning=track?.badges?.includes('⚠ ESCANEO');
+    const hasPost = track?.postContact && !track.postContact.fired;
 
-    const silGrow=track?.badges?.some(b=>b.includes('SIL'));
+    const scanning = track?.badges?.includes('⚠ ESCANEO');
 
-    const hipHide=(track?.hipConcealment??0)>2;
+    const silGrow = track?.badges?.some(b => b.includes('SIL'));
 
-    const hasCom=track?.badges?.some(b=>
+    const hipHide = (track?.hipConcealment ?? 0) > 2;
+
+    const hasCom = track?.badges?.some(b =>
       b.includes('CÓMPLICE') || b.includes('BLOQUEADO')
     );
 
@@ -1884,90 +1896,98 @@ export class DetectionEngine {
 
     ctx.save();
 
-    ctx.strokeStyle=boxCol;
-    ctx.lineWidth=(inZone||hasPost)?2:1.5;
+    ctx.strokeStyle = boxCol;
 
-    ctx.strokeRect(x1,y1,x2-x1,y2-y1);
+    ctx.lineWidth = (inZone || hasPost) ? 2 : 1.5;
 
-    ctx.fillStyle=boxCol;
-    ctx.font='10px "Share Tech Mono",monospace';
+    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
 
-    ctx.fillText(`${isEmp?'👷':''}${Math.round(det.conf*100)}%`,x1+3,y1-3);
+    ctx.fillStyle = boxCol;
 
-    if (track && track.suspicionScore>25 && !isEmp) {
+    ctx.font = '10px "Share Tech Mono",monospace';
 
-      const th=this._profile.scoreThreshold;
-      const sc=track.suspicionScore;
+    ctx.fillText(`${isEmp ? '👷' : ''}${Math.round(det.conf * 100)}%`, x1 + 3, y1 - 3);
+
+    if (track && track.suspicionScore > 25 && !isEmp) {
+
+      const th = this._profile.scoreThreshold;
+      const sc = track.suspicionScore;
 
       ctx.fillStyle =
-        sc>=th*0.8 ? '#ff3d3d' :
-        sc>=th*0.5 ? '#ffaa00' :
+        sc >= th * 0.8 ? '#ff3d3d' :
+        sc >= th * 0.5 ? '#ffaa00' :
         '#ffee58';
 
-      ctx.font='bold 9px "Share Tech Mono",monospace';
+      ctx.font = 'bold 9px "Share Tech Mono",monospace';
 
-      ctx.fillText(`${Math.round(sc)}pts`,x1+3,y2-5);
+      ctx.fillText(`${Math.round(sc)}pts`, x1 + 3, y2 - 5);
     }
 
     ctx.restore();
 
-    // Esqueleto
+    // =============================
+    // ESQUELETO
+    // =============================
+
     ctx.save();
-    ctx.lineWidth=1.8;
 
-    for (const [a,b] of BONES) {
+    ctx.lineWidth = 1.8;
 
-      const pa=k[a];
-      const pb=k[b];
+    for (const [a, b] of BONES) {
+
+      const pa = k[a];
+      const pb = k[b];
 
       if (!_ok(pa) || !_ok(pb)) continue;
 
       ctx.beginPath();
-      ctx.moveTo(pa.x*cw,pa.y*ch);
-      ctx.lineTo(pb.x*cw,pb.y*ch);
+
+      ctx.moveTo(pa.x * cw, pa.y * ch);
+      ctx.lineTo(pb.x * cw, pb.y * ch);
 
       ctx.strokeStyle =
         isEmp
-        ? 'rgba(0,230,118,0.4)'
-        : 'rgba(0,200,255,0.5)';
+          ? 'rgba(0,230,118,0.4)'
+          : 'rgba(0,200,255,0.5)';
 
-      ctx.globalAlpha=0.75;
+      ctx.globalAlpha = 0.75;
 
       ctx.stroke();
     }
 
-    ctx.globalAlpha=1;
+    ctx.globalAlpha = 1;
 
-    for (let i=0;i<17;i++) {
+    for (let i = 0; i < 17; i++) {
 
-      const p=k[i];
+      const p = k[i];
+
       if (!_ok(p)) continue;
 
-      const isW=i===KP.L_WRIST||i===KP.R_WRIST;
-      const isH=i===KP.L_HIP||i===KP.R_HIP;
+      const isW = i === KP.L_WRIST || i === KP.R_WRIST;
+      const isH = i === KP.L_HIP || i === KP.R_HIP;
 
-      const inZ=isW &&
-        this.zoneManager.getZonesForPoint(p.x,p.y).length>0;
+      const inZ = isW && this.zoneManager.getZonesForPoint(p.x, p.y).length > 0;
 
-      const onO=isW &&
-        this._objTracker.alertVisible.some(o=>{
-          const m=0.06;
-          return (
-            p.x>=o.bbox.nx1-m &&
-            p.x<=o.bbox.nx2+m &&
-            p.y>=o.bbox.ny1-m &&
-            p.y<=o.bbox.ny2+m
-          );
-        });
+      const onO = isW && this._objTracker.alertVisible.some(o => {
+
+        const m = 0.06;
+
+        return (
+          p.x >= o.bbox.nx1 - m &&
+          p.x <= o.bbox.nx2 + m &&
+          p.y >= o.bbox.ny1 - m &&
+          p.y <= o.bbox.ny2 + m
+        );
+      });
 
       ctx.beginPath();
 
       ctx.arc(
-        p.x*cw,
-        p.y*ch,
-        isW?6:isH?4:3,
+        p.x * cw,
+        p.y * ch,
+        isW ? 6 : isH ? 4 : 3,
         0,
-        Math.PI*2
+        Math.PI * 2
       );
 
       ctx.fillStyle =
@@ -1979,38 +1999,38 @@ export class DetectionEngine {
 
       ctx.fill();
 
-      if ((inZ||onO) && !isEmp) {
+      if ((inZ || onO) && !isEmp) {
 
         ctx.beginPath();
 
-        ctx.arc(p.x*cw,p.y*ch,11,0,Math.PI*2);
+        ctx.arc(p.x * cw, p.y * ch, 11, 0, Math.PI * 2);
 
-        ctx.strokeStyle=inZ?'#ff3d3d':'#ffb800';
-        ctx.lineWidth=1.5;
+        ctx.strokeStyle = inZ ? '#ff3d3d' : '#ffb800';
 
-        ctx.globalAlpha=
-          0.5+0.5*Math.sin(Date.now()/200);
+        ctx.lineWidth = 1.5;
+
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 200);
 
         ctx.stroke();
 
-        ctx.globalAlpha=1;
+        ctx.globalAlpha = 1;
       }
 
-      if (isH && (track?.hipConcealment??0)>0) {
+      if (isH && (track?.hipConcealment ?? 0) > 0) {
 
         ctx.beginPath();
 
-        ctx.arc(p.x*cw,p.y*ch,13,0,Math.PI*2);
+        ctx.arc(p.x * cw, p.y * ch, 13, 0, Math.PI * 2);
 
-        ctx.strokeStyle='#ff6b35';
-        ctx.lineWidth=1.5;
+        ctx.strokeStyle = '#ff6b35';
 
-        ctx.globalAlpha=
-          0.3+0.4*Math.sin(Date.now()/250);
+        ctx.lineWidth = 1.5;
+
+        ctx.globalAlpha = 0.3 + 0.4 * Math.sin(Date.now() / 250);
 
         ctx.stroke();
 
-        ctx.globalAlpha=1;
+        ctx.globalAlpha = 1;
       }
     }
 
